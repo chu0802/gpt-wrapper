@@ -104,16 +104,15 @@ where `name` is the name of the model, `rates` is a tuple of the form `(prompt_r
 - If you are using custom models, you need to add the `base_url` attribute, and set it to the base URL of the API.
 
 ## Cost Tracking
-The wrapper automatically tracks token usage and costs. Supported models:
-
-- gpt-4o: $0.0025 per 1K prompt tokens, $0.01 per 1K completion tokens
-- gpt-4o-mini: $0.00015 per 1K prompt tokens, $0.0006 per 1K completion tokens
+The wrapper automatically tracks token usage and costs following the rates provided by OpenAI & Google Cloud's official websites.
 
 Access cost information:
 
 ```python
 gpt_wrapper.show_cost()
 ```
+
+***Note: The cost tracking is not 100% accurate, as the price might vary. You should always check the latest price on the OpenAI & Google Cloud websites.***
 
 ## License
 
