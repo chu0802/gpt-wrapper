@@ -86,7 +86,9 @@ SYSTEM_PROMPT = "Analyze images and provide detailed information about objects."
 
 ### Adding more models
 
-You should be able to use arbitrary models that are compatible with OpenAI's API without modifying any code. However, to use the cost tracking feature, you need to inherit a new model class from `BaseModel`, and add the following attributes in `src/models.py`:
+You should be able to use arbitrary models provided by OpenAI without modifying any code. However, for models that are not listed in `src/models.py`, the cost tracking feature will not work.
+
+Besides, to use Gemini, or other models that are not provided by OpenAI, you need to inherit a new model class from `BaseModel`, and add the following attributes in `src/models.py`:
 
 ```python
 class NewModel(BaseModel):
