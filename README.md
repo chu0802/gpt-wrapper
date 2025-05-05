@@ -60,6 +60,7 @@ gpt_wrapper.show_cost()
 
 ### Creating Custom Response Models
 
+You can create custom response models by inheriting from `BaseModel` and adding the fields you want to include in the response.
 
 ```python
 from pydantic import BaseModel
@@ -69,6 +70,12 @@ class DetailedObjectResponse(BaseModel):
     ... # other fields that you want to include in the response
 ```
 
+Then, you can use the custom response model by passing it to the `GPTWrapper` constructor:
+
+```python
+gpt_wrapper = GPTWrapper(model_name="gpt-4o", response_model=DetailedObjectResponse)
+```
+
 ### Custom System Prompts
 
 Modify the system prompt in `src/prompts.py` to customize the behavior:
@@ -76,6 +83,25 @@ Modify the system prompt in `src/prompts.py` to customize the behavior:
 ```python
 SYSTEM_PROMPT = "Analyze images and provide detailed information about objects."
 ```
+
+### Adding more models
+
+You should be able to use arbitrary models that are compatible with OpenAI's API without modifying any code. However, to use the cost tracking feature, you need to inherit a new model class from `BaseModel`, and add the following attributes in `src/models.py`:
+
+```python
+class NewModel(BaseModel):
+    name: str
+    rates: tuple[float, float]
+    base_url: str
+```
+
+where `name` is the name of the model, `rates` is a tuple of the form `(prompt_rate, completion_rate)`, and `base_url` is the base URL of the API.
+
+#### Notes:
+
+- If you are adding a new OpenAI's model, you don't need to add the `base_url` attribute. 
+- If you are adding a new Gemini model, you need to add the `base_url` attribute, and set it to `https://generativelanguage.googleapis.com/v1beta/openai/`.
+- If you are using custom models, you need to add the `base_url` attribute, and set it to the base URL of the API.
 
 ## Cost Tracking
 The wrapper automatically tracks token usage and costs. Supported models:

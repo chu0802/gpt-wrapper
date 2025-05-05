@@ -5,14 +5,10 @@ import base64
 from pathlib import Path
 from .prompts import SYSTEM_PROMPT
 from .response import GeneralResponse
+from .models import BaseModel, get_model
 import os
 from openai import OpenAI
 
-
-MODEL_RATES = {
-    "gpt-4o":      (0.0025, 0.01),
-    "gpt-4o-mini": (0.00015, 0.0006),
-}
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -77,17 +73,18 @@ class PromptMessages:
 
 @dataclass
 class GPTCost:
+    model: BaseModel
     prompt_tokens: int = 0
     completion_tokens: int = 0
     cost: float = 0
-    model_name: str = "gpt-4o"
 
     def __add__(self, other: "GPTCost"):
+        assert self.model == other.model
         return GPTCost(
+            self.model,
             self.prompt_tokens + other.prompt_tokens,
             self.completion_tokens + other.completion_tokens,
             self.cost + other.cost,
-            self.model_name,
         )
 
     def __radd__(self, other: "GPTCost"):
@@ -100,41 +97,48 @@ class GPTCost:
         return self
 
     @classmethod
-    def from_gpt_results(cls, model_name: str, result: Any):
+    def from_gpt_results(cls, model: BaseModel, result: Any):
         pt = result.usage.prompt_tokens
         ct = result.usage.completion_tokens
-        rates = MODEL_RATES.get(model_name, (0.0, 0.0))
+        rates = model.rates
         prompt_rate, completion_rate = rates
-        cost = (pt / 1000) * prompt_rate + (ct / 1000) * completion_rate
-        return cls(pt, ct, cost, model_name)
+        cost = (pt / 1_000_000) * prompt_rate + (ct / 1_000_000) * completion_rate
+        return cls(model, pt, ct, cost)
 
     def __repr__(self):
-        return json.dumps(self.__dict__, indent=4)
+        output_dict = {
+            "model": self.model.name,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "cost": self.cost,
+        }
+        return json.dumps(output_dict, indent=4)
 
 class GPTWrapper:
     def __init__(self, 
         model_name: str = "gpt-4o", 
-        model_params: Dict[str, Any] = None, 
         response_format: Any = GeneralResponse,
+        **model_params,
     ):
+        self.model = get_model(model_name)
         self.client = OpenAI(
             api_key=os.getenv("API_KEY"), 
-            organization=os.getenv("ORGANIZATION"),
+            # organization=os.getenv("ORGANIZATION"),
+            base_url=self.model.base_url,
         )
-        
-        self.model_name = model_name
-        self.params = model_params or {
+        self.params = {
             "model": model_name,
+            **model_params,
         }
         self.response_format = response_format
-        self.total_cost = GPTCost(model_name=self.model_name)
+        self.total_cost = GPTCost(model=self.model)
         self.error_requests = []
 
     def add_cost(self, results: List[Any]):
         if not isinstance(results, list):
             results = [results]
         for result in results:
-            self.total_cost += GPTCost.from_gpt_results(self.model_name, result)
+            self.total_cost += GPTCost.from_gpt_results(self.model, result)
 
     def show_cost(self):
         print(self.total_cost)
