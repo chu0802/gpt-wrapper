@@ -26,7 +26,6 @@ Here is an example of how to use GPT-4o to recognize objects in an image:
 
 ```bash
 API_KEY=your_openai_api_key
-ORGANIZATION=your_openai_organization_id
 ```
 
 2. Source the `.env.sh` file:
@@ -38,14 +37,14 @@ source .env.sh
 3. Use the wrapper:
 
 ```python
-from src.api import GPTWrapper
+from gptwrapper import GPTWrapper
 
 # Initialize wrapper
 gpt_wrapper = GPTWrapper(model_name="gpt-4o")
 
 # Send a query with an image
 result = gpt_wrapper.ask(
-    image="path/to/image.png", 
+    image="examples/kettle.png", 
     text="What is this?"
 )
 
@@ -53,14 +52,14 @@ result = gpt_wrapper.ask(
 print(result)
 
 # Display cost information
-gpt_wrapper.show_cost()
+print(gpt_wrapper.show_cost())
 ```
 
 ## Customization
 
-### Creating Custom Response Models
+### Creating Custom Response Responses
 
-You can create custom response models by inheriting from `BaseModel` and adding the fields you want to include in the response.
+You can create custom response responses by inheriting from `BaseModel` and adding the fields you want to include in the response.
 
 ```python
 from pydantic import BaseModel
@@ -70,15 +69,21 @@ class DetailedObjectResponse(BaseModel):
     ... # other fields that you want to include in the response
 ```
 
-Then, you can use the custom response model by passing it to the `GPTWrapper` constructor:
+Then, you can use the custom response when you are asking the GPT Wrapper:
 
 ```python
-gpt_wrapper = GPTWrapper(model_name="gpt-4o", response_model=DetailedObjectResponse)
+gpt_wrapper = GPTWrapper(model_name="gpt-4o")
+
+gpt.ask(
+    image="examples/kettle.png", 
+    text="What is this?",
+    response_format=DetailedObjectResponse,
+)
 ```
 
 ### Custom System Prompts
 
-Modify the system prompt in `src/prompts.py` to customize the behavior:
+Modify the system prompt in `gptwrapper/config/system_prompt.py` to customize the behavior:
 
 ```python
 SYSTEM_PROMPT = "Analyze images and provide detailed information about objects."
@@ -86,9 +91,9 @@ SYSTEM_PROMPT = "Analyze images and provide detailed information about objects."
 
 ### Adding more models
 
-You should be able to use arbitrary models provided by OpenAI without modifying any code. However, for models that are not listed in `src/models.py`, the cost tracking feature will not work.
+You should be able to use arbitrary models provided by OpenAI without modifying any code. However, for models that are not listed in `gptwrapper/models.py`, the cost tracking feature will not work.
 
-Besides, to use Gemini, or other models that are not provided by OpenAI, you need to inherit a new model class from `BaseModel`, and add the following attributes in `src/models.py`:
+Besides, to use Gemini, or other models that are not provided by OpenAI, you need to inherit a new model class from `BaseModel`, and add the following attributes in `gptwrapper/models.py`:
 
 ```python
 class NewModel(BaseModel):
@@ -111,7 +116,8 @@ The wrapper automatically tracks token usage and costs following the rates provi
 Access cost information:
 
 ```python
-gpt_wrapper.show_cost()
+total_cost = gpt_wrapper.show_cost()
+print(total_cost)
 ```
 
 ***Note: The cost tracking is not 100% accurate, as the price might vary. You should always check the latest price on the OpenAI & Google Cloud websites.***

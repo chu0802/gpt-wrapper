@@ -1,4 +1,4 @@
-from gptwrapper.api import GPTWrapper
+from gptwrapper import GPTWrapper
 from gptwrapper.response import ObjectRecognitionResponse, InteractionResponse
 from gptwrapper.config.system_prompt import RECOGNITION_SYSTEM_PROMPT, INTERACTION_SYSTEM_PROMPT
 
