@@ -1,2 +1,0 @@
-from .object_recognition import ObjectRecognitionResponse
-from .general import GeneralResponse

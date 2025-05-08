@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 import base64
 from pathlib import Path
-from .prompts import SYSTEM_PROMPT
 from .response import GeneralResponse
 from .models import BaseModel, get_model
 import os
@@ -42,10 +41,10 @@ class BaseContent:
         return {"type": type, type: content}
 
 class PromptMessages:
-    def __init__(self, use_system_message: bool = True):
+    def __init__(self, system_message: Optional[str] = None):
         self._messages = []
-        if use_system_message:
-            self.reset_message(use_system_message=True)
+        if system_message:
+            self.reset_message(system_message=system_message)
 
     @property
     def messages(self):
@@ -65,10 +64,10 @@ class PromptMessages:
 
         self._messages.append({"role": role, "content": [c.to_dict() for c in content]})
 
-    def reset_message(self, use_system_message=True):
+    def reset_message(self, system_message: Optional[str] = None):
         self._messages = []
-        if use_system_message:
-            self.add_message(role="system", text=SYSTEM_PROMPT)
+        if system_message:
+            self.add_message(role="system", text=system_message)
         return self
 
 @dataclass
@@ -117,20 +116,17 @@ class GPTCost:
 class GPTWrapper:
     def __init__(self, 
         model_name: str = "gpt-4o", 
-        response_format: Any = GeneralResponse,
         **model_params,
     ):
         self.model = get_model(model_name)
         self.client = OpenAI(
             api_key=os.getenv("API_KEY"), 
-            # organization=os.getenv("ORGANIZATION"),
             base_url=self.model.base_url,
         )
         self.params = {
             "model": model_name,
             **model_params,
         }
-        self.response_format = response_format
         self.total_cost = GPTCost(model=self.model)
         self.error_requests = []
 
@@ -141,14 +137,20 @@ class GPTWrapper:
             self.total_cost += GPTCost.from_gpt_results(self.model, result)
 
     def show_cost(self):
-        print(self.total_cost)
+        return self.total_cost
 
-    def ask(self, image: Optional[str | Path] = None, text: Optional[str] = None, use_system_message: bool = True):
-        msgs = PromptMessages(use_system_message)
+    def ask(
+        self, 
+        image: Optional[str | Path] = None, 
+        text: Optional[str] = None, 
+        system_message: Optional[str] = None,
+        response_format: Any = GeneralResponse,
+    ):
+        msgs = PromptMessages(system_message)
         msgs.add_message(image=image, text=text)
         result = self.client.beta.chat.completions.parse(
             messages=msgs.messages, 
-            response_format=self.response_format, 
+            response_format=response_format, 
             **self.params,
         )
         self.add_cost(result)
